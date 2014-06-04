@@ -158,6 +158,11 @@
   :type 'boolean
   :group 'rspec-mode)
 
+(defcustom rspec-use-rbenv nil
+  "When t, use rbenv. Requires rbenv.el."
+  :type 'boolean
+  :group 'rspec-mode)
+
 (defcustom rspec-use-bundler-when-possible t
   "When t and Gemfile is present, run specs with 'bundle exec'.
 Not used when running specs using Zeus or Spring."
@@ -488,6 +493,13 @@ file if it exists, or sensible defaults otherwise"
   (and rspec-use-bundler-when-possible
        (file-readable-p (concat (rspec-project-root) "Gemfile"))))
 
+(defun rspec-rbenv-p ()
+  (and rspec-use-rbenv
+       (boundp 'rbenv-binary-paths)))
+
+(defun rspec-get-rbenv-shims ()
+  (file-name-as-directory (cdr (assoc 'shims-path rbenv-binary-paths))))
+
 (defun rspec-zeus-p ()
   (and rspec-use-zeus-when-possible
        (file-exists-p (concat (rspec-project-root) ".zeus.sock"))))
@@ -521,8 +533,8 @@ file if it exists, or sensible defaults otherwise"
 
 (defun rspec-runner ()
   "Returns command line to run rspec"
-  (let* ((command-prefix (if (boundp 'rbenv-binary-paths) (file-name-as-directory (cdr (assoc 'shims-path rbenv-binary-paths))) ""))
-         (bundle-command (if (rspec-bundle-p) 
+  (let* ((command-prefix (if (rspec-rbenv-p) (rspec-get-rbenv-shims) ""))
+         (bundle-command (if (rspec-bundle-p)
                              (concat command-prefix "bundle exec " "")))
          (zeus-command (if (rspec-zeus-p) (concat command-prefix "zeus ") nil))
          (spring-command (if (rspec-spring-p) (concat command-prefix "spring ") nil)))
